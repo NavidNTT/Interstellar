@@ -10,9 +10,10 @@ type SelectionPanelProps = {
   onTravel: () => void;
   onStop: () => void;
   onBackToOverview: () => void;
+  onDetails: () => void;
 };
 
-export function SelectionPanel({ selectedBody, phase, direction, onTravel, onStop, onBackToOverview }: SelectionPanelProps) {
+export function SelectionPanel({ selectedBody, phase, direction, onTravel, onStop, onBackToOverview, onDetails }: SelectionPanelProps) {
   const isTraveling = phase === "traveling";
   const status = !selectedBody
     ? "Awaiting selection"
@@ -34,8 +35,11 @@ export function SelectionPanel({ selectedBody, phase, direction, onTravel, onSto
           {status}
         </h1>
         <p className="mt-3 text-sm leading-6 text-slate-300">
-          {selectedBody?.description ?? "Select a celestial body to explore."}
+          {selectedBody?.shortDescription ?? "Select a celestial body to explore."}
         </p>
+        {selectedBody && phase !== "traveling" && (
+          <p className="mt-2 text-xs uppercase tracking-[0.16em] text-slate-400">{selectedBody.type}</p>
+        )}
         <div className="mt-5 flex flex-col gap-2">
           {phase === "selected" && (
             <button
@@ -63,6 +67,15 @@ export function SelectionPanel({ selectedBody, phase, direction, onTravel, onSto
               onClick={onBackToOverview}
             >
               BACK TO OVERVIEW
+            </button>
+          )}
+          {(phase === "selected" || phase === "arrived") && selectedBody && (
+            <button
+              type="button"
+              className="min-h-11 rounded-lg border border-white/15 bg-white/5 px-4 py-3 text-left text-xs font-semibold tracking-[0.16em] text-slate-200 transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              onClick={onDetails}
+            >
+              OPEN DETAILS
             </button>
           )}
         </div>

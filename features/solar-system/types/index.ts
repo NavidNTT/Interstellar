@@ -1,14 +1,31 @@
 export type CelestialBodyType = "star" | "planet";
 
-export type CelestialBody = {
-  id: "sun" | "earth" | "mars";
+export type CelestialBodyId = "sun" | "earth" | "mars";
+
+export type CelestialBodyDetails = {
+  id: CelestialBodyId;
   name: string;
   type: CelestialBodyType;
   radius: number;
   distanceFromSun: number;
   color: string;
-  description: string;
+  shortDescription: string;
+  fullDescription: string;
+  diameter: string;
+  mass: string;
+  gravity: string;
+  averageTemperature: string;
+  distanceFromSunDisplay: string;
+  orbitalPeriod: string;
+  rotationPeriod: string;
+  numberOfMoons: string;
+  numberOfPlanets: string;
+  atmosphere: string;
+  composition: string;
+  interestingFacts: string[];
 };
+
+export type CelestialBody = CelestialBodyDetails;
 
 export type SolarSystemPhase = "overview" | "selected" | "traveling" | "arrived";
 

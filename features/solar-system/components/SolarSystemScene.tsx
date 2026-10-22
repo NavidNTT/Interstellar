@@ -2,13 +2,14 @@
 
 import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { OVERVIEW_CAMERA_POSITION, OVERVIEW_CAMERA_TARGET } from "../data/camera";
-import { bodyById, celestialBodies } from "../data/bodies";
+import { celestialBodies, getBodyDetails } from "../data/bodies";
 import { CelestialBody } from "./CelestialBody";
 import { OrbitPath } from "./OrbitPath";
 import { SelectionPanel } from "./SelectionPanel";
+import { BodyDetails } from "./BodyDetails";
 import { StarField } from "./StarField";
 import { TravelCamera } from "./TravelCamera";
 import { useSolarSystemState } from "../hooks/useSolarSystemState";
@@ -17,19 +18,22 @@ export function SolarSystemScene() {
   const { state, selectBody, clearSelection, startTravel, returnToOverview, cancelTravel, completeTravel } =
     useSolarSystemState();
   const controlsRef = useRef<OrbitControlsImpl>(null);
-  const selectedBody = state.selectedId ? bodyById[state.selectedId] : null;
+  const selectedBody = getBodyDetails(state.selectedId);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   useEffect(() => {
     if (state.phase === "overview") return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      if (state.phase === "traveling") cancelTravel();
+      if (isDetailsOpen) {
+        setIsDetailsOpen(false);
+      } else if (state.phase === "traveling") cancelTravel();
       else if (state.phase === "selected") clearSelection();
       else if (state.phase === "arrived" && state.selectedId) selectBody(state.selectedId);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [cancelTravel, clearSelection, selectBody, state.phase, state.selectedId]);
+  }, [cancelTravel, clearSelection, isDetailsOpen, selectBody, state.phase, state.selectedId]);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#030712] text-white">
@@ -47,14 +51,17 @@ export function SolarSystemScene() {
           <hemisphereLight args={["#a7c7ed", "#080b14", 0.45]} />
           <pointLight position={[0, 0, 0]} intensity={80} distance={40} decay={2} color="#ffd29a" />
           <StarField />
-          <OrbitPath radius={bodyById.earth.distanceFromSun} />
-          <OrbitPath radius={bodyById.mars.distanceFromSun} />
+          <OrbitPath radius={getBodyDetails("earth")?.distanceFromSun ?? 5.4} />
+          <OrbitPath radius={getBodyDetails("mars")?.distanceFromSun ?? 8.2} />
           {celestialBodies.map((body) => (
             <CelestialBody
               key={body.id}
               body={body}
               selected={state.selectedId === body.id}
-              onSelect={selectBody}
+              onSelect={(id) => {
+                setIsDetailsOpen(false);
+                selectBody(id);
+              }}
             />
           ))}
           <OrbitControls ref={controlsRef} enablePan minDistance={5} maxDistance={28} target={OVERVIEW_CAMERA_TARGET} />
@@ -74,8 +81,13 @@ export function SolarSystemScene() {
         direction={state.direction}
         onTravel={startTravel}
         onStop={cancelTravel}
-        onBackToOverview={returnToOverview}
+        onBackToOverview={() => {
+          setIsDetailsOpen(false);
+          returnToOverview();
+        }}
+        onDetails={() => setIsDetailsOpen(true)}
       />
+      {isDetailsOpen && selectedBody && <BodyDetails body={selectedBody} onClose={() => setIsDetailsOpen(false)} />}
       <p className="pointer-events-none absolute bottom-4 right-4 z-10 max-w-[15rem] text-right text-[0.65rem] tracking-[0.12em] text-slate-400/80 sm:bottom-6 sm:right-6">
         DRAG TO ORBIT · SCROLL TO ZOOM · CLICK A BODY
       </p>
