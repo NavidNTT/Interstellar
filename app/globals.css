@@ -19,6 +19,35 @@ body {
   min-height: 100%;
 }
 
+.exploration-dialog {
+  position: fixed;
+  inset: 0 0 0 auto;
+  margin: 12px;
+  width: min(36rem, calc(100vw - 24px));
+  max-width: none;
+  max-height: calc(100dvh - 24px);
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 15%);
+  border-radius: 1rem;
+  background: #020617;
+  color: #f1f5f9;
+  box-shadow: 0 20px 60px #0008;
+}
+.exploration-dialog[open] { display: flex; flex-direction: column; }
+.exploration-dialog::backdrop { background: rgb(0 0 0 / 35%); }
+.mission-card { border: 1px solid #ffffff20; border-radius: 0.75rem; padding: 1rem; overflow-wrap: anywhere; }
+.mission-button { min-height: 44px; padding: 0.65rem 0.8rem; border: 1px solid #ffffff30; border-radius: 0.5rem; font-size: 0.7rem; letter-spacing: 0.08em; cursor: pointer; }
+.mission-button:hover:enabled { background: #ffffff12; }
+.mission-button:disabled { opacity: 0.5; cursor: default; }
+button:focus-visible, select:focus-visible, [tabindex]:focus-visible { outline: 2px solid #fde68a; outline-offset: 3px; }
+.mission-status { font-size: 0.65rem; letter-spacing: 0.1em; color: #cbd5e1; }
+.mission-status-active { color: #fde68a; }
+.mission-status-completed { color: #a7f3d0; }
+@media (min-width: 640px) {
+  .exploration-dialog { margin: 24px; width: min(36rem, calc(100vw - 48px)); max-height: calc(100dvh - 48px); }
+}
+
 html,
 body {
   min-height: 100%;

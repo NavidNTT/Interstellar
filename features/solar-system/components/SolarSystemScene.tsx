@@ -1,5 +1,10 @@
 "use client";
 
+import { MissionBrowser } from "@/features/missions/components/MissionBrowser";
+import { MissionList } from "@/features/missions/components/MissionList";
+import { useMissionState } from "@/features/missions/hooks/useMissionState";
+import { getMission } from "@/features/missions/data/missions";
+import { currentStep } from "@/features/missions/utils/missionProgress";
 import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
@@ -17,23 +22,44 @@ import { useSolarSystemState } from "../hooks/useSolarSystemState";
 export function SolarSystemScene() {
   const { state, selectBody, clearSelection, startTravel, returnToOverview, cancelTravel, completeTravel } =
     useSolarSystemState();
+  const mission = useMissionState();
+  const [isMissionsOpen, setIsMissionsOpen] = useState(false);
+  const activeMission = getMission(mission.state.activeMissionId);
+  const nextStep = activeMission ? currentStep(activeMission, mission.state) : null;
+  const missionControls = {
+    state: mission.state, ready: mission.ready, canSelectDestination: state.phase !== "traveling",
+    onStart: mission.startMission, onReset: mission.resetActiveMission,
+    onDestination: (id: string) => {
+      const body = getBodyDetails(id);
+      if (!body || state.phase === "traveling") return;
+      setIsMissionsOpen(false);
+      setIsDetailsOpen(false);
+      selectBody(body.id);
+    },
+  };
+  const handleTravelComplete = () => {
+    if (state.phase === "traveling" && state.direction === "to-body") {
+      mission.recordObjective(state.selectedId, "visit");
+    }
+    completeTravel();
+  };
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const selectedBody = getBodyDetails(state.selectedId);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   useEffect(() => {
-    if (state.phase === "overview") return;
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      if (isDetailsOpen) {
-        setIsDetailsOpen(false);
-      } else if (state.phase === "traveling") cancelTravel();
+      // Native dialogs own Escape while open, preventing a second travel transition.
+      if (isMissionsOpen || isDetailsOpen) return;
+      if (state.phase === "traveling") cancelTravel();
       else if (state.phase === "selected") clearSelection();
       else if (state.phase === "arrived" && state.selectedId) selectBody(state.selectedId);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [cancelTravel, clearSelection, isDetailsOpen, selectBody, state.phase, state.selectedId]);
+  }, [cancelTravel, clearSelection, isMissionsOpen, isDetailsOpen, selectBody, state.phase, state.selectedId]);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#030712] text-white">
@@ -71,7 +97,7 @@ export function SolarSystemScene() {
             selectedBody={selectedBody}
             requestId={state.requestId}
             controlsRef={controlsRef}
-            onComplete={completeTravel}
+            onComplete={handleTravelComplete}
           />
         </Canvas>
       </div>
@@ -85,9 +111,15 @@ export function SolarSystemScene() {
           setIsDetailsOpen(false);
           returnToOverview();
         }}
-        onDetails={() => setIsDetailsOpen(true)}
+        onMissions={() => setIsMissionsOpen(true)}
+        missionSummary={activeMission && nextStep ? "ACTIVE: " + activeMission.title + " / " + nextStep.label : mission.state.completedMissionIds.length ? mission.state.completedMissionIds.length + " missions COMPLETED. Choose your next exploration." : "Choose a mission to guide your exploration."}
+        onDetails={() => {
+          if (selectedBody) mission.recordObjective(selectedBody.id, "inspect");
+          setIsDetailsOpen(true);
+        }}
       />
-      {isDetailsOpen && selectedBody && <BodyDetails body={selectedBody} onClose={() => setIsDetailsOpen(false)} />}
+      {isDetailsOpen && selectedBody && <BodyDetails body={selectedBody} onClose={() => setIsDetailsOpen(false)} missions={<><button type="button" className="mission-button mb-3" onClick={() => setIsMissionsOpen(true)}>VIEW ALL MISSIONS</button><MissionList bodyId={selectedBody.id} {...missionControls} /></>} />}
+      {isMissionsOpen && <MissionBrowser {...missionControls} onClose={() => setIsMissionsOpen(false)} />}
       <p className="pointer-events-none absolute bottom-4 right-4 z-10 max-w-[15rem] text-right text-[0.65rem] tracking-[0.12em] text-slate-400/80 sm:bottom-6 sm:right-6">
         DRAG TO ORBIT · SCROLL TO ZOOM · CLICK A BODY
       </p>
