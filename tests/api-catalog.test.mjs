@@ -5,6 +5,8 @@ import { createTypeScriptLoader } from "./helpers/loadTypeScript.mjs";
 const load = createTypeScriptLoader();
 const { adaptBodies, adaptMissions } = load("lib/api/adapters");
 const { ApiError, requestData } = load("lib/api/client");
+const { fetchCelestialBodies } = load("lib/api/celestialBodies");
+const { fetchMissionDefinitions } = load("lib/api/missions");
 const { createCatalogStore, initialCatalog } = load("features/exploration/catalogStore");
 const { missionReducer, initialMissionState, parseMissionState } = load("features/missions/utils/missionProgress");
 const snake = key => key.replace(/[A-Z]/g, char => "_" + char.toLowerCase());
@@ -16,6 +18,29 @@ const missionPayload = initialCatalog.missions.map(mission => ({
   destinations: mission.steps.map((step, index) => ({ slug: step.id, body_slug: step.bodyId, sequence: index + 1, kind: step.kind, objective: step.label })),
 }));
 const settle = () => new Promise(resolve => setImmediate(resolve));
+
+test("catalog clients use v1 beneath the configured API base and omit credentials", async () => {
+  const previousBase = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const previousFetch = globalThis.fetch;
+  const requests = [];
+  try {
+    process.env.NEXT_PUBLIC_API_BASE_URL = "https://catalog.example.test/api/";
+    globalThis.fetch = async (url, options) => {
+      requests.push({ url, credentials: options.credentials, accept: options.headers.Accept });
+      return new Response(JSON.stringify({ data: [] }));
+    };
+    const signal = new AbortController().signal;
+    assert.deepEqual(await fetchCelestialBodies(signal), []);
+    assert.deepEqual(await fetchMissionDefinitions(signal), []);
+    assert.deepEqual(requests, ["celestial-bodies", "missions"].map(resource => ({
+      url: `https://catalog.example.test/api/v1/${resource}`, credentials: "omit", accept: "application/json",
+    })));
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousBase === undefined) delete process.env.NEXT_PUBLIC_API_BASE_URL;
+    else process.env.NEXT_PUBLIC_API_BASE_URL = previousBase;
+  }
+});
 
 test("API adapters reproduce Phase 4 domain data and preserve stable IDs", () => {
   assert.deepEqual(adaptBodies(bodyPayload), initialCatalog.bodies);

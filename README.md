@@ -36,6 +36,12 @@ The local scene renders immediately during API loading. A shared provider reques
     npm.cmd test
     npm.cmd run build
 
-Fifteen unit tests cover mission state, adapters, errors, timeout/cancellation, request sharing, fallback/retry, and storage retention. tests/mission-browser.mjs exercises Phase 4 flows; tests/api-browser.mjs exercises API content, delayed loading, fallback, empty/malformed responses, request counts, and mobile notices. Both require an isolated Chrome debugging session on port 9338. Keep its profile outside the source tree; scripts clear that profile's storage. MISSION_TEST_URL overrides the default http://localhost:3010.
+Sixteen unit tests cover mission state, versioned requests, adapters, errors, timeout/cancellation, request sharing, fallback/retry, and storage retention. The client appends `/v1` to the configured `/api` base; do not include `/v1` in the environment value. Legacy backend `/api` routes remain available.
+
+Run `node tests/run-browser.mjs` for the production build and both browser suites with a new temporary SQLite database and Chrome profile. It requires PHP, installed backend dependencies, and Chrome. It refuses occupied ports (3010, 8016, 9338), never migrates the development database, and stops its servers on completion. It runs mission regressions with the isolated API online and again after stopping it. Screenshots remain in the printed temporary directory for review. See [PHASE_6.md](PHASE_6.md) for configuration overrides, exact coverage, deployment steps, and validation results.
 
 See [PHASE_5.md](PHASE_5.md) for the complete implementation report and file inventory, and [PHASE_4.md](PHASE_4.md) for the previous local mission system.
+
+## Production configuration
+
+Use the existing Node server deployment (`npm ci`, `npm run build`, `npm run start`) behind an HTTPS reverse proxy. Set `NEXT_PUBLIC_API_BASE_URL=https://api.example.com/api` **before building**, replacing the example host. This browser-visible address must be reachable by users; localhost points to the user's computer. Keep application keys, database paths, credentials, and other backend settings exclusively on the backend. Changing the public URL requires a new build. The frontend needs no backend secret. See [PHASE_6.md](PHASE_6.md) for Laravel configuration, persistence, backup, and rollout guidance. No production hosting environment has been verified.

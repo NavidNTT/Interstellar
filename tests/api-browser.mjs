@@ -1,10 +1,15 @@
-// Requires the Next.js production server, Laravel on port 8000, and isolated Chrome on port 9338.
+// Use tests/run-browser.mjs for an isolated Laravel database and Chrome profile.
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { PerspectiveCamera, Vector3 } from "three";
 
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-const target = await (await fetch("http://127.0.0.1:9338/json/new?about:blank", { method: "PUT" })).json();
+const apiBase = process.env.BROWSER_API_BASE || "http://localhost:8000/api";
+const frontendUrl = process.env.MISSION_TEST_URL || "http://localhost:3010";
+const debugBase = process.env.BROWSER_DEBUG_URL || "http://127.0.0.1:9338";
+const target = await (await fetch(`${debugBase}/json/new?about:blank`, { method: "PUT" })).json();
 const socket = new WebSocket(target.webSocketDebuggerUrl);
 await new Promise(resolve => socket.addEventListener("open", resolve, { once: true }));
 let sequence = 0, mode = "live", requestCount = 0;
@@ -12,8 +17,9 @@ const pending = new Map(), errors = [], tasks = new Set();
 const send = (method, params = {}) => new Promise((resolve, reject) => {
   const id = ++sequence; pending.set(id, { resolve, reject }); socket.send(JSON.stringify({ id, method, params }));
 });
-const bodyResponse = await (await fetch("http://localhost:8000/api/celestial-bodies")).json();
-const missionResponse = await (await fetch("http://localhost:8000/api/missions")).json();
+const requestedPaths = new Set();
+const bodyResponse = await (await fetch(`${apiBase}/v1/celestial-bodies`)).json();
+const missionResponse = await (await fetch(`${apiBase}/v1/missions`)).json();
 async function respond(event) {
   const bodyRequest = event.request.url.includes("celestial-bodies");
   if (mode === "live") { await send("Fetch.continueRequest", { requestId: event.requestId }); return; }
@@ -30,7 +36,7 @@ async function respond(event) {
       mission.destinations[0].slug = "api-arrive-earth";
     }
   }
-  await send("Fetch.fulfillRequest", { requestId: event.requestId, responseCode: 200, responseHeaders: [{ name: "Content-Type", value: "application/json" }, { name: "Access-Control-Allow-Origin", value: "http://localhost:3010" }], body: Buffer.from(JSON.stringify(response)).toString("base64") });
+  await send("Fetch.fulfillRequest", { requestId: event.requestId, responseCode: 200, responseHeaders: [{ name: "Content-Type", value: "application/json" }, { name: "Access-Control-Allow-Origin", value: new URL(frontendUrl).origin }], body: Buffer.from(JSON.stringify(response)).toString("base64") });
 }
 socket.addEventListener("message", ({ data }) => {
   const message = JSON.parse(data);
@@ -40,7 +46,9 @@ socket.addEventListener("message", ({ data }) => {
   }
   if (message.method === "Runtime.exceptionThrown") errors.push(message.params.exceptionDetails.text);
   if (message.method === "Runtime.consoleAPICalled" && message.params.type === "error") errors.push(message.params.args.map(arg => arg.value || arg.description).join(" "));
-  if (message.method === "Network.requestWillBeSent" && message.params.request.url.includes(":8000/api/")) requestCount++;
+  if (message.method === "Network.requestWillBeSent" && message.params.request.url.startsWith(`${apiBase}/`)) {
+    requestCount++; requestedPaths.add(message.params.request.url);
+  }
   if (message.method === "Fetch.requestPaused") {
     const task = respond(message.params).catch(error => errors.push(error.message));
     tasks.add(task); task.finally(() => tasks.delete(task));
@@ -56,11 +64,13 @@ async function wait(expression) {
 }
 async function click(label, title) {
   const root = title ? `Array.from(document.querySelectorAll('article')).find(x=>x.getAttribute('aria-label')===${JSON.stringify(title)})` : "document.querySelector('dialog[open]:last-of-type') || document";
-  await evaluate(`(() => {const r=${root};const b=Array.from(r.querySelectorAll('button')).find(x=>x.textContent.trim()===${JSON.stringify(label)});if(!b||b.disabled)throw Error('Missing action: '+${JSON.stringify(label)});b.click()})()`); await pause(100);
+  const point = await evaluate(`(() => {const r=${root};const b=Array.from(r.querySelectorAll('button')).find(x=>x.textContent.trim()===${JSON.stringify(label)});if(!b||b.disabled)throw Error('Missing action: '+${JSON.stringify(label)});b.scrollIntoView({block:'center'});const box=b.getBoundingClientRect();const x=box.x+box.width/2,y=box.y+box.height/2;if(box.left<0||box.right>innerWidth||box.top<0||box.bottom>innerHeight||b.scrollWidth>b.clientWidth||!b.contains(document.elementFromPoint(x,y)))throw Error('Clipped or covered action: '+${JSON.stringify(label)});return {x,y}})()`);
+  await send("Input.dispatchMouseEvent", { type: "mousePressed", ...point, button: "left", clickCount: 1 });
+  await send("Input.dispatchMouseEvent", { type: "mouseReleased", ...point, button: "left", clickCount: 1 }); await pause(100);
 }
 async function navigate() {
   requestCount = 0;
-  await send("Page.navigate", { url: process.env.MISSION_TEST_URL || "http://localhost:3010" });
+  await send("Page.navigate", { url: frontendUrl });
   await wait("!!document.querySelector('canvas')");
 }
 const contains = text => `document.body.textContent.includes(${JSON.stringify(text)})`;
@@ -68,9 +78,45 @@ async function escape() {
   await send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
   await send("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 }); await pause(100);
 }
+async function layout(label) {
+  const failures = await evaluate(`(() => {
+    const failures=[];
+    if(document.documentElement.scrollWidth>innerWidth) failures.push('page overflow');
+    const dialog=document.querySelector('dialog[open]:last-of-type');
+    const roots=dialog?[dialog,dialog.lastElementChild]:[document.querySelector('aside')];
+    for(const root of roots){const b=root.getBoundingClientRect();if(b.left<0||b.right>innerWidth||b.top<0||b.bottom>innerHeight||root.scrollWidth>root.clientWidth+1)failures.push('container clipping');}
+    if(!dialog){const notice=document.querySelector('[aria-label="Catalog connection"]');notice.scrollIntoView({block:'center'});const text=notice.querySelector('p'),range=document.createRange();range.selectNodeContents(text);const b=text.getBoundingClientRect();for(const r of range.getClientRects())if(r.left<b.left-1||r.right>b.right+1||r.top<b.top-1||r.bottom>b.bottom+1)failures.push('notice text clipping');if(parseFloat(getComputedStyle(text).fontSize)<12)failures.push('notice font');}
+    return failures;
+  })()`);
+  assert.deepEqual(failures, [], label);
+}
+async function screenshot(name) {
+  const directory = process.env.BROWSER_SCREENSHOT_DIR || path.join(os.tmpdir(), "interstellar-browser-screenshots");
+  fs.mkdirSync(directory, { recursive: true });
+  fs.writeFileSync(path.join(directory, `${name}.png`), Buffer.from((await send("Page.captureScreenshot", { format: "png" })).data, "base64"));
+}
+async function responsiveFlow(title, width, state) {
+  await layout(`${width} ${state} notice`);
+  await click("BROWSE MISSIONS"); await layout(`${width} ${state} missions`);
+  await click("START MISSION", title); await click("VIEW DESTINATION", title);
+  assert.equal(await evaluate("document.querySelector('h1').textContent"), "Earth");
+  await layout(`${width} ${state} selection`);
+  await click("OPEN DETAILS"); await layout(`${width} ${state} details`);
+  await screenshot(`${width}-${state}-details`);
+  await click("VIEW ALL MISSIONS"); await layout(`${width} ${state} nested missions`);
+  await escape(); assert.equal(await evaluate("document.querySelectorAll('dialog[open]').length"), 1);
+  await escape(); assert.equal(await evaluate("document.querySelectorAll('dialog[open]').length"), 0);
+  await click("TRAVEL TO EARTH"); await escape();
+  assert.equal(await evaluate("document.querySelector('h1').textContent"), "Earth");
+  await click("TRAVEL TO EARTH");
+  await wait("document.querySelector('h1').textContent==='ARRIVED AT EARTH'");
+  await layout(`${width} ${state} arrival`);
+  await click("BACK TO OVERVIEW");
+  await wait("document.querySelector('h1').textContent==='Awaiting selection'");
+}
 try {
   await send("Runtime.enable"); await send("Page.enable"); await send("Network.enable");
-  await send("Fetch.enable", { patterns: [{ urlPattern: "*://localhost:8000/api/*" }] });
+  await send("Fetch.enable", { patterns: [{ urlPattern: `${apiBase}/*` }] });
   await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
   await navigate(); await wait(contains("API catalog connected"));
   assert.equal(requestCount, 2);
@@ -108,9 +154,7 @@ try {
     assert.ok(await evaluate(`document.documentElement.scrollWidth<=${width}`));
     assert.ok(await evaluate("Array.from(document.querySelectorAll('button')).some(b=>b.textContent==='RETRY CONNECTION'&&!b.disabled)"));
   }
-  fs.mkdirSync(".phase5/screenshots", { recursive: true });
-  const screenshot = await send("Page.captureScreenshot", { format: "png" });
-  fs.writeFileSync(".phase5/screenshots/fallback-mobile.png", Buffer.from(screenshot.data, "base64"));
+  await screenshot("fallback-mobile");
   mode = "custom"; requestCount = 0; await click("RETRY CONNECTION"); await wait(contains("API catalog connected")); assert.equal(requestCount, 2);
   mode = "empty"; await navigate(); await wait(contains("No celestial bodies are published"));
   assert.ok(await evaluate("JSON.parse(localStorage.getItem('interstellar:mission-state:v1')).completedMissionIds.includes('api-contact')"));
@@ -118,8 +162,29 @@ try {
   mode = "malformed"; await navigate(); await wait(contains("API unavailable"));
   assert.equal(requestCount, 2); assert.ok(await evaluate("!!document.querySelector('canvas')"));
   mode = "live"; await click("RETRY CONNECTION"); await wait(contains("API catalog connected"));
-  await pause(400); assert.equal(requestCount, 4); assert.deepEqual(errors, []);
+  await pause(400); assert.equal(requestCount, 4);
+  for (const [width, height] of [[1440, 900], [768, 1024], [375, 812], [320, 568]]) {
+    await send("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 600 });
+    await evaluate("localStorage.removeItem('interstellar:mission-state:v1')");
+    mode = "delayed"; await navigate(); await wait(contains("Loading exploration catalog"));
+    await layout(`${width} loading`);
+    await wait(contains("API catalog connected")); assert.equal(requestCount, 2);
+    await responsiveFlow("API Contact Check", width, "connected");
+    mode = "unavailable"; await navigate(); await wait(contains("API unavailable"));
+    assert.equal(requestCount, 2); await screenshot(`${width}-fallback`);
+    await responsiveFlow("First Contact", width, "fallback");
+    const before = await evaluate("localStorage.getItem('interstellar:mission-state:v1')");
+    mode = "delayed"; requestCount = 0; await click("RETRY CONNECTION");
+    await wait(contains("Loading exploration catalog")); await layout(`${width} retry loading`);
+    await wait(contains("API catalog connected")); assert.equal(requestCount, 2);
+    await layout(`${width} recovered`);
+    assert.equal(await evaluate("localStorage.getItem('interstellar:mission-state:v1')"), before);
+    console.log(`PASS responsive ${width}x${height}: loading, connected/fallback missions, selection/details, nested Escape, travel cancel/arrival/overview, retry and retained progress; real pointer actions.`);
+  }
+  assert.deepEqual([...requestedPaths].sort(), [`${apiBase}/v1/celestial-bodies`, `${apiBase}/v1/missions`].sort());
+  assert.deepEqual(errors, []);
   console.log("PASS: real Laravel API, exactly two catalog requests, delayed loading and canvas selection, API-only mission/scientific data, travel completion and reload persistence, connection failure, fallback, retry, empty/malformed data, mobile notices; no application console errors.");
 } finally {
   await Promise.allSettled(tasks); await send("Fetch.disable"); socket.close();
+  await fetch(`${debugBase}/json/close/${target.id}`);
 }

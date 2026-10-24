@@ -2,8 +2,9 @@
 import assert from "node:assert/strict";
 
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const tabs = await (await fetch("http://127.0.0.1:9338/json")).json();
-const socket = new WebSocket(tabs.find((tab) => tab.type === "page").webSocketDebuggerUrl);
+const debugBase = process.env.BROWSER_DEBUG_URL || "http://127.0.0.1:9338";
+const target = await (await fetch(`${debugBase}/json/new?about:blank`, { method: "PUT" })).json();
+const socket = new WebSocket(target.webSocketDebuggerUrl);
 await new Promise((resolve) => socket.addEventListener("open", resolve, { once: true }));
 let sequence = 0;
 const pending = new Map();
@@ -54,7 +55,8 @@ const arrived = () => wait("document.querySelector('h1').textContent.includes('A
 const reload = async () => {
   await send("Page.reload");
   await wait("!!document.querySelector('canvas')");
-  await pause(600);
+  await wait("!!document.querySelector('[aria-label=\"Catalog connection\"]') && !document.querySelector('[aria-label=\"Catalog connection\"]').textContent.includes('Loading exploration catalog')");
+  await pause(100);
 };
 try {
   await send("Runtime.enable"); await send("Page.enable");
@@ -118,4 +120,5 @@ try {
   console.log("PASS: mission flows, cancellation, focus, Escape, persistence, storage failures, scene drag, responsive layouts; no console errors.");
 } finally {
   socket.close();
+  await fetch(`${debugBase}/json/close/${target.id}`);
 }
