@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { CelestialBody } from "../types";
 import type { SolarSystemPhase, TravelDirection } from "../types";
 
@@ -13,9 +14,10 @@ type SelectionPanelProps = {
   onDetails: () => void;
   onMissions: () => void;
   missionSummary: string;
+  catalogNotice: ReactNode;
 };
 
-export function SelectionPanel({ selectedBody, phase, direction, onTravel, onStop, onBackToOverview, onDetails, onMissions, missionSummary }: SelectionPanelProps) {
+export function SelectionPanel({ selectedBody, phase, direction, onTravel, onStop, onBackToOverview, onDetails, onMissions, missionSummary, catalogNotice }: SelectionPanelProps) {
   const isTraveling = phase === "traveling";
   const status = !selectedBody
     ? "Awaiting selection"
@@ -31,6 +33,7 @@ export function SelectionPanel({ selectedBody, phase, direction, onTravel, onSto
     <aside className="pointer-events-auto absolute left-4 top-4 z-10 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-white/15 max-h-[calc(100dvh-2rem)] overflow-y-auto bg-slate-950/75 p-5 text-slate-100 shadow-2xl shadow-black/30 backdrop-blur-md sm:left-6 sm:top-6 sm:p-6">
       <p className="text-[0.65rem] font-semibold tracking-[0.34em] text-sky-200/70">INTERSTELLAR</p>
       <p className="mt-2 text-[0.6rem] tracking-[0.25em] text-slate-400">SOLAR SYSTEM / 01</p>
+      {catalogNotice}
       <div className="mt-4 border-t border-white/10 pt-4">
         <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Selected body</p>
         <h1 className="mt-2 text-2xl font-medium tracking-tight text-white">

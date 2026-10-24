@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { celestialBodies } from "@/features/solar-system/data/bodies";
+import { useExplorationData } from "@/features/exploration/ExplorationDataProvider";
 import { ExplorationDialog } from "@/features/solar-system/components/ExplorationDialog";
 import type { MissionControls } from "./MissionCard";
 import { MissionList } from "./MissionList";
 
 export function MissionBrowser({ onClose, ...controls }: MissionControls & { onClose: () => void }) {
+  const { bodies: celestialBodies } = useExplorationData();
   const [bodyId, setBodyId] = useState("all");
   return <ExplorationDialog title="Exploration missions" eyebrow="Mission control" onClose={onClose}>
     <p className="mb-4 text-sm leading-6 text-slate-300">Choose a mission, then explore at your own pace. Starting a mission keeps your current view.</p>

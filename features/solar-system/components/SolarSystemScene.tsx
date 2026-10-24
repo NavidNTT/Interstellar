@@ -3,14 +3,15 @@
 import { MissionBrowser } from "@/features/missions/components/MissionBrowser";
 import { MissionList } from "@/features/missions/components/MissionList";
 import { useMissionState } from "@/features/missions/hooks/useMissionState";
-import { getMission } from "@/features/missions/data/missions";
+import { useExplorationData } from "@/features/exploration/ExplorationDataProvider";
+import { CatalogNotice } from "@/features/exploration/CatalogNotice";
 import { currentStep } from "@/features/missions/utils/missionProgress";
 import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { OVERVIEW_CAMERA_POSITION, OVERVIEW_CAMERA_TARGET } from "../data/camera";
-import { celestialBodies, getBodyDetails } from "../data/bodies";
+
 import { CelestialBody } from "./CelestialBody";
 import { OrbitPath } from "./OrbitPath";
 import { SelectionPanel } from "./SelectionPanel";
@@ -22,6 +23,8 @@ import { useSolarSystemState } from "../hooks/useSolarSystemState";
 export function SolarSystemScene() {
   const { state, selectBody, clearSelection, startTravel, returnToOverview, cancelTravel, completeTravel } =
     useSolarSystemState();
+  const catalog = useExplorationData();
+  const { bodies: celestialBodies, getBody: getBodyDetails, getMission } = catalog;
   const mission = useMissionState();
   const [isMissionsOpen, setIsMissionsOpen] = useState(false);
   const activeMission = getMission(mission.state.activeMissionId);
@@ -111,6 +114,7 @@ export function SolarSystemScene() {
           setIsDetailsOpen(false);
           returnToOverview();
         }}
+        catalogNotice={<><CatalogNotice canRetry={state.phase !== "traveling"} />{mission.state.activeMissionId && !activeMission && <div className="mt-3 text-xs text-slate-300"><p>The saved active mission is unavailable in this catalog. Its progress is retained.</p><button type="button" className="mission-button mt-2" onClick={mission.resetActiveMission}>ABANDON UNAVAILABLE MISSION</button></div>}</>}
         onMissions={() => setIsMissionsOpen(true)}
         missionSummary={activeMission && nextStep ? "ACTIVE: " + activeMission.title + " / " + nextStep.label : mission.state.completedMissionIds.length ? mission.state.completedMissionIds.length + " missions COMPLETED. Choose your next exploration." : "Choose a mission to guide your exploration."}
         onDetails={() => {

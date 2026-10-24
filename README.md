@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Interstellar
 
-## Getting Started
+An interactive Next.js / React Three Fiber solar system with Sun, Earth, Mars, scientific profiles, explicit camera travel, and local mission progress.
 
-First, run the development server:
+Phase 5 connects the isolated Laravel catalog API at C:/laragon/www/interstellar-api. Mission progress remains browser-local; the backend only publishes body and mission definitions.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Run locally
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Start the backend in another terminal from C:/laragon/www/interstellar-api:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+    php artisan migrate --seed --no-interaction
+    php artisan serve --host=127.0.0.1 --port=8000 --no-interaction
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The backend uses its own database/database.sqlite. Preserve existing environment files and never reset unrelated databases. See its README for clean setup instructions.
 
-## Learn More
+Create .env.local from .env.example only if missing:
 
-To learn more about Next.js, take a look at the following resources:
+    NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+This public value is compiled into the browser bundle. Restart development or rebuild production after changing it. Use a deployed HTTPS API origin in production. If omitted or unavailable, the app uses its existing local body and mission catalog.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Run the frontend:
 
-## Deploy on Vercel
+    npm.cmd run dev
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The default origin is http://localhost:3000. Browser regression scripts also support a server on port 3010, included in the backend development CORS allowlist.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Data behavior
+
+The local scene renders immediately during API loading. A shared provider requests bodies and missions once, validates both, and publishes a consistent catalog. Successful empty data shows an empty notice. Invalid or unavailable data switches to a labeled local fallback. Retry is explicit. Panels, selection, camera controls, and localStorage progress stay independent of network availability.
+
+## Validation
+
+    npm.cmd run lint
+    npx.cmd tsc --noEmit
+    npm.cmd test
+    npm.cmd run build
+
+Fifteen unit tests cover mission state, adapters, errors, timeout/cancellation, request sharing, fallback/retry, and storage retention. tests/mission-browser.mjs exercises Phase 4 flows; tests/api-browser.mjs exercises API content, delayed loading, fallback, empty/malformed responses, request counts, and mobile notices. Both require an isolated Chrome debugging session on port 9338. Keep its profile outside the source tree; scripts clear that profile's storage. MISSION_TEST_URL overrides the default http://localhost:3010.
+
+See [PHASE_5.md](PHASE_5.md) for the complete implementation report and file inventory, and [PHASE_4.md](PHASE_4.md) for the previous local mission system.

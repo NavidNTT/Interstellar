@@ -1,5 +1,6 @@
 import { SolarSystemScene } from "@/features/solar-system";
+import { ExplorationDataProvider } from "@/features/exploration/ExplorationDataProvider";
 
 export default function Home() {
-  return <SolarSystemScene />;
+  return <ExplorationDataProvider><SolarSystemScene /></ExplorationDataProvider>;
 }

@@ -44,6 +44,8 @@ export function TravelCamera({
 
   useEffect(() => {
     const controls = controlsRef.current;
+    // Finish the current animation even if catalog hydration changes or removes its body.
+    if (phase === "traveling" && animationRef.current?.requestId === requestId) return;
     if (phase !== "traveling" || !direction || (direction === "to-body" && !selectedBody)) {
       animationRef.current = null;
       if (controls) controls.enabled = true;

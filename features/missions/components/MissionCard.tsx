@@ -1,4 +1,4 @@
-import { getBodyDetails } from "@/features/solar-system/data/bodies";
+import { useExplorationData } from "@/features/exploration/ExplorationDataProvider";
 import type { Mission, MissionState } from "../types/mission";
 import { currentStep, missionStatus } from "../utils/missionProgress";
 
@@ -13,7 +13,8 @@ export type MissionControls = {
 
 export function MissionCard({ mission, ...controls }: MissionControls & { mission: Mission }) {
   const { state, ready, canSelectDestination, onStart, onDestination, onReset } = controls;
-  const status = missionStatus(mission, state);
+  const { getBody: getBodyDetails, bodies } = useExplorationData();
+  const status = missionStatus(mission, state, bodies);
   const step = status === "active" ? currentStep(mission, state) : mission.steps[0];
   const blocked = !!state.activeMissionId && status !== "active";
   return (
@@ -38,7 +39,7 @@ export function MissionCard({ mission, ...controls }: MissionControls & { missio
           onClick={() => status === "active" && step ? onDestination(step.bodyId) : onStart(mission.id)}>
           {status === "completed" ? "MISSION COMPLETED" : status === "locked" ? "DESTINATION UNAVAILABLE" : status === "active" ? "VIEW DESTINATION" : "START MISSION"}
         </button>
-        {status === "active" && <button type="button" className="mission-button" onClick={onReset}>ABANDON MISSION</button>}
+        {state.activeMissionId === mission.id && <button type="button" className="mission-button" onClick={onReset}>ABANDON MISSION</button>}
       </div>
       {status === "active" && <p className="mt-3 text-xs leading-5 text-slate-400">{step?.kind === "inspect" ? "View the destination, then open its scientific details." : "View the destination, then press the travel button. Only a new arrival counts."} Abandoning clears this mission&apos;s steps.</p>}
       {blocked && status === "available" && <p className="mt-3 text-xs text-slate-400">Finish or abandon the active mission to start this one.</p>}
