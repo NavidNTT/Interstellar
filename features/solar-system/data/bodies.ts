@@ -1,4 +1,5 @@
 import type { CelestialBodyDetails, CelestialBodyId } from "../types";
+import { CELESTIAL_BODY_IDS } from "../types/index";
 
 export const celestialBodies: CelestialBodyDetails[] = [
   {
@@ -79,6 +80,167 @@ export const celestialBodies: CelestialBodyDetails[] = [
       "Mars has two small moons named Phobos and Deimos.",
     ],
   },
+  // The six bodies below are appended so the existing records keep their original order.
+  // `radius` (scene radius) and `distanceFromSun` (scene orbit radius) are illustrative
+  // presentation values, not physical scale. Overview framing and zoom limits are derived
+  // from this catalog in data/camera.ts, so these values can be retuned without editing the
+  // camera code.
+  {
+    id: "mercury",
+    name: "Mercury",
+    type: "planet",
+    radius: 0.35,
+    distanceFromSun: 3.1,
+    color: "#9c8e84",
+    shortDescription: "A small, cratered world racing through the innermost orbit.",
+    fullDescription: "Mercury is the smallest planet and the closest to the Sun. Without a substantial atmosphere to hold heat, it swings between extremes of day and night, and its heavily cratered surface preserves a long record of impacts.",
+    diameter: "4,879 km",
+    mass: "3.301 × 10²³ kg",
+    gravity: "3.7 m/s²",
+    averageTemperature: "About 167°C global average; −173°C to 427°C between night and day",
+    distanceFromSunDisplay: "57.9 million km",
+    orbitalPeriod: "88 Earth days",
+    rotationPeriod: "58.6 Earth days (sidereal); 176 Earth days solar day",
+    numberOfMoons: "0",
+    numberOfPlanets: "—",
+    atmosphere: "Effectively none; a tenuous exosphere of oxygen, sodium, hydrogen, helium, and potassium",
+    composition: "An iron-rich core filling most of the planet's radius, enclosed by a thin silicate mantle and crust.",
+    interestingFacts: [
+      "A single Mercury year lasts only 88 Earth days.",
+      "Its day-night temperature swing is the largest of any planet, from about −173°C to 427°C.",
+      "Mercury rotates three times for every two orbits it completes around the Sun.",
+    ],
+  },
+  {
+    id: "venus",
+    name: "Venus",
+    type: "planet",
+    radius: 0.58,
+    distanceFromSun: 4.2,
+    color: "#e0b070",
+    shortDescription: "A veiled, scorching twin of Earth beneath permanent cloud cover.",
+    fullDescription: "Venus is close to Earth in size and mass but has a dense carbon dioxide atmosphere that traps heat in a runaway greenhouse effect. Its surface is hot enough to melt lead, and clouds of sulfuric acid hide the landscape from view.",
+    diameter: "12,104 km",
+    mass: "4.867 × 10²⁴ kg",
+    gravity: "8.87 m/s²",
+    averageTemperature: "About 464°C at the surface",
+    distanceFromSunDisplay: "108.2 million km",
+    orbitalPeriod: "224.7 Earth days",
+    rotationPeriod: "243 Earth days, retrograde (sidereal); 117 Earth days solar day",
+    numberOfMoons: "0",
+    numberOfPlanets: "—",
+    atmosphere: "About 96.5% carbon dioxide and 3.5% nitrogen, with layers of sulfuric acid cloud",
+    composition: "A rocky silicate planet with an iron core, largely resurfaced by widespread volcanism.",
+    interestingFacts: [
+      "Venus spins backwards compared with most planets, so the Sun would rise in the west.",
+      "A sidereal day lasts longer than its year: 243 Earth days to spin once against 224.7 to orbit the Sun.",
+      "Surface pressure is roughly 92 times that of Earth at sea level.",
+    ],
+  },
+  {
+    id: "jupiter",
+    name: "Jupiter",
+    type: "planet",
+    radius: 1.55,
+    distanceFromSun: 14,
+    color: "#d8a06a",
+    shortDescription: "The system's largest planet, banded in cloud and circled by storms.",
+    fullDescription: "Jupiter is a gas giant more massive than all the other planets combined. Its rapid rotation stretches the clouds into alternating belts and zones, and its Great Red Spot is a storm that has persisted for centuries.",
+    diameter: "142,984 km at the equator",
+    mass: "1.898 × 10²⁷ kg",
+    gravity: "24.79 m/s² (mean at the 1-bar level)",
+    averageTemperature: "About −108°C at the 1-bar level",
+    distanceFromSunDisplay: "778.5 million km",
+    orbitalPeriod: "11.86 Earth years",
+    rotationPeriod: "9 hours 56 minutes (sidereal)",
+    numberOfMoons: "115 (as of April 2026)",
+    numberOfPlanets: "—",
+    atmosphere: "About 90% hydrogen and 10% helium by volume, with traces of methane, ammonia, and water",
+    composition: "Mostly hydrogen and helium, with a deep layer of metallic hydrogen and a diffuse dense core.",
+    interestingFacts: [
+      "Jupiter is more than eleven times wider than Earth.",
+      "The Great Red Spot is a storm wider than Earth.",
+      "Its four largest moons, Io, Europa, Ganymede, and Callisto, were first observed by Galileo in 1610.",
+    ],
+  },
+  {
+    id: "saturn",
+    name: "Saturn",
+    type: "planet",
+    radius: 1.32,
+    distanceFromSun: 18.5,
+    color: "#e3c887",
+    shortDescription: "A pale gas giant framed by the system's broadest ring system.",
+    fullDescription: "Saturn is a gas giant best known for its bright rings, which are made almost entirely of water ice. Its low density and rapid rotation flatten it visibly at the poles.",
+    diameter: "120,536 km at the equator",
+    mass: "5.683 × 10²⁶ kg",
+    gravity: "10.44 m/s² (mean at the 1-bar level)",
+    averageTemperature: "About −139°C at the 1-bar level",
+    distanceFromSunDisplay: "1,434 million km",
+    orbitalPeriod: "29.45 Earth years",
+    rotationPeriod: "10 hours 33 minutes (sidereal)",
+    numberOfMoons: "293 (as of August 2026)",
+    numberOfPlanets: "—",
+    atmosphere: "About 96% hydrogen and 3% helium by volume, with traces of methane and ammonia",
+    composition: "Mostly hydrogen and helium surrounding a metallic hydrogen interior, with a mean density lower than water.",
+    interestingFacts: [
+      "Saturn's mean density is lower than that of water, so it would float in a large enough ocean.",
+      "Its main rings span about 282,000 km but are typically only tens of metres thick.",
+      "Titan, its largest moon, has a thick nitrogen atmosphere and lakes of liquid hydrocarbons.",
+    ],
+  },
+  {
+    id: "uranus",
+    name: "Uranus",
+    type: "planet",
+    radius: 0.86,
+    distanceFromSun: 22.5,
+    color: "#8fd6e0",
+    shortDescription: "A tilted ice giant rolling on its side through the outer system.",
+    fullDescription: "Uranus is an ice giant whose axis is tipped close to its orbital plane, so the planet appears to roll on its side as it orbits. Methane in its upper atmosphere absorbs red light, giving the planet a pale blue-green color.",
+    diameter: "51,118 km at the equator",
+    mass: "8.681 × 10²⁵ kg",
+    gravity: "9.01 m/s² (mean at the 1-bar level)",
+    averageTemperature: "About −197°C at the 1-bar level",
+    distanceFromSunDisplay: "2,871 million km",
+    orbitalPeriod: "84 Earth years",
+    rotationPeriod: "17 hours 14 minutes, retrograde (sidereal)",
+    numberOfMoons: "29 (as of August 2025)",
+    numberOfPlanets: "—",
+    atmosphere: "About 83% hydrogen, 15% helium, and 2% methane by volume",
+    composition: "A hydrogen and helium envelope over an icy mantle of water, ammonia, and methane, around a small rocky core.",
+    interestingFacts: [
+      "Uranus is tilted about 98°, most likely by a collision early in its history.",
+      "Each pole receives about 42 Earth years of continuous sunlight, then 42 years of darkness.",
+      "It was the first planet found with a telescope, in 1781.",
+    ],
+  },
+  {
+    id: "neptune",
+    name: "Neptune",
+    type: "planet",
+    radius: 0.83,
+    distanceFromSun: 26.5,
+    color: "#5b7fdf",
+    shortDescription: "The most distant planet, a deep blue ice giant of fierce winds.",
+    fullDescription: "Neptune is the outermost planet and the smallest of the four giants. Despite receiving little sunlight, it drives the fastest winds measured in the solar system and shows dark storms that appear and fade over years.",
+    diameter: "49,528 km at the equator",
+    mass: "1.024 × 10²⁶ kg",
+    gravity: "11.15 m/s² (mean at the 1-bar level)",
+    averageTemperature: "About −201°C at the 1-bar level",
+    distanceFromSunDisplay: "4,515 million km",
+    orbitalPeriod: "164.8 Earth years",
+    rotationPeriod: "16 hours 7 minutes (sidereal)",
+    numberOfMoons: "16",
+    numberOfPlanets: "—",
+    atmosphere: "About 80% hydrogen, 19% helium, and 1.5% methane by volume",
+    composition: "A hydrogen and helium envelope over a mantle of water, ammonia, and methane above a rocky core.",
+    interestingFacts: [
+      "Neptune's winds reach roughly 2,000 km/h, the fastest measured in the solar system.",
+      "It was found in 1846 by following mathematical predictions, before anyone observed it.",
+      "One Neptune year lasts about 165 Earth years; it completed its first full orbit since discovery in 2011.",
+    ],
+  },
 ];
 
 export const bodyById: Partial<Record<CelestialBodyId, CelestialBodyDetails>> = celestialBodies.reduce<
@@ -89,6 +251,6 @@ export const bodyById: Partial<Record<CelestialBodyId, CelestialBodyDetails>> = 
 }, {});
 
 export function getBodyDetails(id: string | null | undefined): CelestialBodyDetails | null {
-  if (id !== "sun" && id !== "earth" && id !== "mars") return null;
-  return bodyById[id] ?? null;
+  const bodyId = CELESTIAL_BODY_IDS.find((bodyId) => bodyId === id);
+  return bodyId ? bodyById[bodyId] ?? null : null;
 }

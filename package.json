@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test tests/mission-progress.test.mjs tests/api-catalog.test.mjs"
+    "test": "node --test tests/mission-progress.test.mjs tests/api-catalog.test.mjs tests/scene-framing.test.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",

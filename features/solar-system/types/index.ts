@@ -1,6 +1,10 @@
 export type CelestialBodyType = "star" | "planet";
 
-export type CelestialBodyId = "sun" | "earth" | "mars";
+export const CELESTIAL_BODY_IDS = [
+  "sun", "mercury", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune",
+] as const;
+
+export type CelestialBodyId = (typeof CELESTIAL_BODY_IDS)[number];
 
 export type CelestialBodyDetails = {
   id: CelestialBodyId;

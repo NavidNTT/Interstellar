@@ -1,5 +1,6 @@
 import { ApiError } from "./client";
 import type { CelestialBodyDetails, CelestialBodyId } from "@/features/solar-system/types";
+import { CELESTIAL_BODY_IDS } from "@/features/solar-system/types/index";
 import type { Mission, MissionStep } from "@/features/missions/types/mission";
 
 function object(value: unknown): Record<string, unknown> {
@@ -20,7 +21,7 @@ function number(value: unknown, min: number, max: number): number {
   return value;
 }
 export function isBodyId(value: unknown): value is CelestialBodyId {
-  return value === "sun" || value === "earth" || value === "mars";
+  return CELESTIAL_BODY_IDS.some((id) => id === value);
 }
 function list(value: unknown): unknown[] {
   if (!Array.isArray(value) || value.length > 500) throw new ApiError("invalid");
@@ -36,7 +37,7 @@ export function adaptBodies(payload: unknown): CelestialBodyDetails[] {
   for (const entry of entries) {
     const body = object(entry);
     const id = slug(body.slug);
-    // Phase 5 keeps the three-body scene's public identifier contract.
+    // Unsupported slugs are ignored; supported bodies must pass full validation.
     if (!isBodyId(id)) continue;
     if (body.type !== "star" && body.type !== "planet") throw new ApiError("invalid");
     const color = text(body.color);

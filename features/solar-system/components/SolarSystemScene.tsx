@@ -8,9 +8,29 @@ import { CatalogNotice } from "@/features/exploration/CatalogNotice";
 import { currentStep } from "@/features/missions/utils/missionProgress";
 import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import { OVERVIEW_CAMERA_POSITION, OVERVIEW_CAMERA_TARGET } from "../data/camera";
+import {
+  OVERVIEW_CAMERA_POSITION,
+  OVERVIEW_CAMERA_TARGET,
+  OVERVIEW_FOV,
+  OVERVIEW_MAX_DISTANCE,
+  OVERVIEW_MIN_DISTANCE,
+  planetaryOrbits,
+} from "../data/camera";
+import {
+  AMBIENT_INTENSITY,
+  HEMISPHERE_GROUND_COLOR,
+  HEMISPHERE_INTENSITY,
+  HEMISPHERE_SKY_COLOR,
+  KEY_LIGHT_COLOR,
+  KEY_LIGHT_INTENSITY,
+  KEY_LIGHT_POSITION,
+  POINT_ACCENT_COLOR,
+  POINT_ACCENT_DECAY,
+  POINT_ACCENT_DISTANCE,
+  POINT_ACCENT_INTENSITY,
+} from "../data/lighting";
 
 import { CelestialBody } from "./CelestialBody";
 import { OrbitPath } from "./OrbitPath";
@@ -48,6 +68,8 @@ export function SolarSystemScene() {
   };
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const selectedBody = getBodyDetails(state.selectedId);
+  // Every catalog planet gets a ring; the Sun is excluded by planetaryOrbits.
+  const orbits = useMemo(() => planetaryOrbits(celestialBodies), [celestialBodies]);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   useEffect(() => {
@@ -68,7 +90,7 @@ export function SolarSystemScene() {
     <main className="relative min-h-screen overflow-hidden bg-[#030712] text-white">
       <div className="absolute inset-0" aria-label="Interactive solar system scene">
         <Canvas
-          camera={{ position: OVERVIEW_CAMERA_POSITION, fov: 45 }}
+          camera={{ position: OVERVIEW_CAMERA_POSITION, fov: OVERVIEW_FOV }}
           dpr={[1, 2]}
           onPointerMissed={() => {
             if (state.phase === "selected") clearSelection();
@@ -76,12 +98,24 @@ export function SolarSystemScene() {
           gl={{ antialias: true, alpha: false }}
         >
           <color attach="background" args={["#030712"]} />
-          <ambientLight intensity={0.32} />
-          <hemisphereLight args={["#a7c7ed", "#080b14", 0.45]} />
-          <pointLight position={[0, 0, 0]} intensity={80} distance={40} decay={2} color="#ffd29a" />
+          <ambientLight intensity={AMBIENT_INTENSITY} />
+          <hemisphereLight args={[HEMISPHERE_SKY_COLOR, HEMISPHERE_GROUND_COLOR, HEMISPHERE_INTENSITY]} />
+          <directionalLight
+            position={KEY_LIGHT_POSITION}
+            intensity={KEY_LIGHT_INTENSITY}
+            color={KEY_LIGHT_COLOR}
+          />
+          <pointLight
+            position={[0, 0, 0]}
+            intensity={POINT_ACCENT_INTENSITY}
+            distance={POINT_ACCENT_DISTANCE}
+            decay={POINT_ACCENT_DECAY}
+            color={POINT_ACCENT_COLOR}
+          />
           <StarField />
-          <OrbitPath radius={getBodyDetails("earth")?.distanceFromSun ?? 5.4} />
-          <OrbitPath radius={getBodyDetails("mars")?.distanceFromSun ?? 8.2} />
+          {orbits.map((orbit) => (
+            <OrbitPath key={orbit.id} radius={orbit.radius} />
+          ))}
           {celestialBodies.map((body) => (
             <CelestialBody
               key={body.id}
@@ -93,7 +127,13 @@ export function SolarSystemScene() {
               }}
             />
           ))}
-          <OrbitControls ref={controlsRef} enablePan minDistance={5} maxDistance={28} target={OVERVIEW_CAMERA_TARGET} />
+          <OrbitControls
+            ref={controlsRef}
+            enablePan
+            minDistance={OVERVIEW_MIN_DISTANCE}
+            maxDistance={OVERVIEW_MAX_DISTANCE}
+            target={OVERVIEW_CAMERA_TARGET}
+          />
           <TravelCamera
             phase={state.phase}
             direction={state.direction}
