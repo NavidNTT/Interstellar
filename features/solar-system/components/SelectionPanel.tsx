@@ -30,7 +30,7 @@ export function SelectionPanel({ selectedBody, phase, direction, onTravel, onSto
         : selectedBody.name;
 
   return (
-    <aside className="pointer-events-auto absolute left-4 top-4 z-10 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-white/15 max-h-[calc(100dvh-2rem)] overflow-y-auto bg-slate-950/75 p-5 text-slate-100 shadow-2xl shadow-black/30 backdrop-blur-md sm:left-6 sm:top-6 sm:p-6">
+    <aside className="selection-panel pointer-events-auto absolute left-4 top-4 z-10 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-white/15 max-h-[calc(100dvh-2rem)] overflow-y-auto bg-slate-950/75 p-5 text-slate-100 shadow-2xl shadow-black/30 backdrop-blur-md sm:left-6 sm:top-6 sm:p-6">
       <p className="text-[0.65rem] font-semibold tracking-[0.34em] text-sky-200/70">INTERSTELLAR</p>
       <p className="mt-2 text-[0.6rem] tracking-[0.25em] text-slate-400">SOLAR SYSTEM / 01</p>
       {catalogNotice}

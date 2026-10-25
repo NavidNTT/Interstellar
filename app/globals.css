@@ -35,6 +35,8 @@ body {
   box-shadow: 0 20px 60px #0008;
 }
 .exploration-dialog[open] { display: flex; flex-direction: column; }
+.exploration-dialog, .selection-panel { overflow-wrap: anywhere; }
+.exploration-dialog-content { flex: 1 1 auto; scrollbar-gutter: stable; }
 .exploration-dialog::backdrop { background: rgb(0 0 0 / 35%); }
 .mission-card { border: 1px solid #ffffff20; border-radius: 0.75rem; padding: 1rem; overflow-wrap: anywhere; }
 .mission-button { min-height: 44px; padding: 0.65rem 0.8rem; border: 1px solid #ffffff30; border-radius: 0.5rem; font-size: 0.7rem; letter-spacing: 0.08em; cursor: pointer; }

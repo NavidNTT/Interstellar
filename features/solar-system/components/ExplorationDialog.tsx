@@ -40,10 +40,10 @@ export function ExplorationDialog({ title, eyebrow, onClose, children }: {
       onClose();
     }}
     onCancel={(event) => { event.preventDefault(); event.stopPropagation(); onClose(); }}>
-    <header className="flex items-start justify-between gap-4 border-b border-white/10 p-5 sm:p-6">
+    <header className="flex shrink-0 items-start justify-between gap-4 border-b border-white/10 p-5 sm:p-6">
       <div className="min-w-0"><p className="text-xs uppercase tracking-[0.2em] text-amber-200/80">{eyebrow}</p><h2 id={titleId} className="mt-2 text-2xl text-white">{title}</h2></div>
       <button autoFocus type="button" className="mission-button shrink-0" onClick={onClose} aria-label={`Close ${title}`}>Close</button>
     </header>
-    <div tabIndex={0} className="min-h-0 overflow-y-auto overscroll-contain p-5 sm:p-6">{children}</div>
+    <div tabIndex={0} className="exploration-dialog-content min-h-0 overflow-y-auto overscroll-contain p-5 sm:p-6">{children}</div>
   </dialog>;
 }

@@ -4,6 +4,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { PerspectiveCamera, Vector3 } from "three";
+import { createTypeScriptLoader } from "./helpers/loadTypeScript.mjs";
+import { installResourceCounters, presentationChecks } from "./helpers/presentationChecks.mjs";
+
+const cameraData = createTypeScriptLoader()("features/solar-system/data/camera");
 
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const apiBase = process.env.BROWSER_API_BASE || "http://localhost:8000/api";
@@ -30,7 +34,12 @@ async function respond(event) {
   else if (mode === "unavailable") {
     await send("Fetch.failRequest", { requestId: event.requestId, errorReason: "ConnectionRefused" }); return;
   } else {
-    if (bodyRequest) response.data.find(body => body.slug === "earth").full_description = "API scientific profile integration check.";
+    if (bodyRequest) {
+      const earth = response.data.find(body => body.slug === "earth");
+      earth.full_description = "API scientific profile integration check. " + "LongScientificValue".repeat(60);
+      earth.mass = "API mass: 5.972 × 10²⁴ kg";
+      earth.atmosphere = "API atmosphere " + "LongAtmosphereValue".repeat(60);
+    }
     else {
       const mission = response.data[0]; mission.slug = "api-contact"; mission.title = "API Contact Check";
       mission.destinations[0].slug = "api-arrive-earth";
@@ -102,6 +111,10 @@ async function responsiveFlow(title, width, state) {
   assert.equal(await evaluate("document.querySelector('h1').textContent"), "Earth");
   await layout(`${width} ${state} selection`);
   await click("OPEN DETAILS"); await layout(`${width} ${state} details`);
+  assert.ok(await evaluate("document.querySelector('#body-statistics-heading').parentElement.textContent.includes('Moons')"));
+  assert.ok(await evaluate("!document.querySelector('#body-statistics-heading').parentElement.textContent.includes('Planets in system')"));
+  if (state === "connected") assert.ok(await evaluate(contains("API mass: 5.972 × 10²⁴ kg")));
+  else assert.ok(await evaluate(contains("5.972 × 10²⁴ kg")));
   await screenshot(`${width}-${state}-details`);
   await click("VIEW ALL MISSIONS"); await layout(`${width} ${state} nested missions`);
   await escape(); assert.equal(await evaluate("document.querySelectorAll('dialog[open]').length"), 1);
@@ -116,18 +129,21 @@ async function responsiveFlow(title, width, state) {
 }
 try {
   await send("Runtime.enable"); await send("Page.enable"); await send("Network.enable");
+  await send("Page.addScriptToEvaluateOnNewDocument", { source: `(${installResourceCounters.toString()})()` });
   await send("Fetch.enable", { patterns: [{ urlPattern: `${apiBase}/*` }] });
   await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
   await navigate(); await wait(contains("API catalog connected"));
   assert.equal(requestCount, 2);
+  await presentationChecks({ send, evaluate, wait, click, escape, layout, screenshot, bodies: bodyResponse.data });
   await evaluate("localStorage.removeItem('interstellar:mission-state:v1')");
   mode = "delayed"; await navigate(); await wait(contains("Loading exploration catalog"));
   await pause(700);
   // A real canvas click verifies selection remains available during loading.
-  const camera = new PerspectiveCamera(45, 1440 / 900, 0.1, 1000);
-  camera.position.set(10, 8, 15); camera.lookAt(3, 0, 0); camera.updateMatrixWorld();
+  const camera = new PerspectiveCamera(cameraData.OVERVIEW_FOV, 1920 / 1080, 0.1, 1000);
+  camera.position.set(...cameraData.OVERVIEW_CAMERA_POSITION);
+  camera.lookAt(new Vector3(...cameraData.OVERVIEW_CAMERA_TARGET)); camera.updateMatrixWorld();
   const sun = new Vector3(0, 0, 0).project(camera);
-  const x = (sun.x + 1) * 720, y = (1 - sun.y) * 450;
+  const x = (sun.x + 1) * 960, y = (1 - sun.y) * 540;
   await send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", clickCount: 1 });
   await send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 });
   await wait("document.querySelector('h1').textContent==='Sun'");
